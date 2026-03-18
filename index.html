@@ -1446,22 +1446,23 @@ select { cursor: pointer; }
         </div>
 
         <!-- Porción -->
-        <div class="card" style="margin-top:12px">
-          <div class="section-label">Porción</div>
-          <div style="display:flex;gap:10px;margin-top:8px;align-items:center">
-            <input type="number" id="qualPortionQty" value="1" min="0.5" step="0.5" inputmode="decimal"
-              style="width:70px;text-align:center;font-size:18px;font-family:var(--font-display)">
-            <select id="qualPortionUnit" style="flex:1;font-family:var(--font-display);font-size:14px">
-              <option value="tz">taza (tz)</option>
-              <option value="½ tz">½ taza</option>
-              <option value="¼ tz">¼ taza</option>
-              <option value="cda">cucharada (cda)</option>
-              <option value="cdta">cucharadita (cdta)</option>
-              <option value="Palma">Palma de la mano</option>
-              <option value="Cajita">Cajita de fósforos</option>
-              <option value="unidad">unidad</option>
-              <option value="Puño">Puño cerrado</option>
-            </select>
+        <div class="card" style="margin-top:12px" id="qualPortionCard" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div class="section-label" style="margin:0">Cantidad</div>
+            <div id="qualPortionHint" style="font-size:11px;color:var(--muted)"></div>
+          </div>
+          <!-- Quick quantity buttons -->
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="qualQtyBtns"></div>
+          <!-- Custom qty input -->
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="qualPortionQty" value="1" min="0.25" step="0.25" inputmode="decimal"
+              oninput="updateQualPortionCalc()"
+              style="width:80px;text-align:center;font-size:20px;font-family:var(--font-display);padding:10px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text)">
+            <div id="qualPortionUnitLabel" style="font-size:16px;color:var(--text2);font-family:var(--font-display)"></div>
+          </div>
+          <!-- Equivalence result -->
+          <div id="qualPortionResult" style="margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--text2);display:none">
+            <span id="qualPortionResultText"></span>
           </div>
         </div>
 
@@ -1806,6 +1807,21 @@ const QUAL_CATEGORIES = [
   { name: 'Frutas',    color: '#e8904a', emoji: '🟠' },
   { name: 'Azúcar',    color: '#d4789a', emoji: '🩷' },
 ];
+
+// Base portion size per category — 1 porción = qty + unit
+const QUAL_BASE_PORTIONS = {
+  'Harinas':   { qty: 0.5, unit: 'tz',     hint: '½ taza cocido' },
+  'Carnes':    { qty: 1,   unit: 'Palma',  hint: '1 palma (30g)' },
+  'Vegetales': { qty: 1,   unit: 'tz',     hint: '1 taza crudo / ½ tz cocido' },
+  'Grasas':    { qty: 1,   unit: 'cdta',   hint: '1 cdta aceite / 5 nueces' },
+  'Lácteos':   { qty: 1,   unit: 'tz',     hint: '1 taza leche o yogur' },
+  'Frutas':    { qty: 1,   unit: 'unidad', hint: '1 fruta mediana entera' },
+  'Azúcar':    { qty: 1,   unit: 'cda',    hint: '1 cda azúcar o miel' },
+};
+
+// Common quantity options shown in the selector
+const QUAL_QTY_OPTIONS = [0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3];
+
 const QUAL_UNITS = ['tz','½ tz','¼ tz','cda','cdta','Palma','Cajita','unidad','Puño'];
 
 let qualMode = false;           // is qualitative mode active?
@@ -3037,8 +3053,7 @@ async function saveQualSettings() {
     goal_cat_frutas:    settings.qualFrutas,
     goal_cat_azucar:    settings.qualAzucar,
   });
-  if (error) { showToast('Error al guardar', true); return; }
-  showToast('✓ Porciones guardadas');
+  if (error) { showToast(`Error: ${error.message}`, true); return; }
   renderCarouselDay();
 }
 
@@ -3081,6 +3096,9 @@ function resetQualForm() {
   selectedQualMeal = null;
   selectedQualDate = null;
   clearQualDate();
+  // Hide portion card
+  const card = document.getElementById('qualPortionCard');
+  if (card) card.style.display = 'none';
   // Reset category buttons
   document.querySelectorAll('[id^="qualCat-"]').forEach(b => {
     b.style.background = 'transparent';
@@ -3124,10 +3142,63 @@ function selectQualCategory(cat) {
   document.querySelectorAll('[id^="qualCat-"]').forEach(b => {
     const isActive = b.dataset.cat === cat;
     const catDef = QUAL_CATEGORIES.find(c => c.name === b.dataset.cat);
-    b.style.background   = isActive ? (catDef?.color || 'var(--accent)') : 'transparent';
-    b.style.color        = isActive ? '#0e110a' : 'var(--text2)';
-    b.style.borderColor  = isActive ? (catDef?.color || 'var(--accent)') : 'var(--border)';
+    b.style.background  = isActive ? (catDef?.color || 'var(--accent)') : 'transparent';
+    b.style.color       = isActive ? '#0e110a' : 'var(--text2)';
+    b.style.borderColor = isActive ? (catDef?.color || 'var(--accent)') : 'var(--border)';
   });
+
+  // Show portion card with correct unit
+  const base = QUAL_BASE_PORTIONS[cat];
+  if (!base) return;
+  const card = document.getElementById('qualPortionCard');
+  card.style.display = 'block';
+
+  // Set hint
+  document.getElementById('qualPortionHint').textContent = `1 porción = ${base.hint}`;
+
+  // Set unit label
+  document.getElementById('qualPortionUnitLabel').textContent = base.unit;
+
+  // Build quick qty buttons
+  const btns = document.getElementById('qualQtyBtns');
+  btns.innerHTML = QUAL_QTY_OPTIONS.map(q => {
+    const portions = q / base.qty;
+    const portionsLabel = Number.isInteger(portions) ? portions : portions.toFixed(1);
+    return `<button onclick="setQualQty(${q})" data-qty="${q}"
+      style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s">
+      ${q} ${base.unit}<br><span style="font-size:10px;color:var(--muted)">${portionsLabel} porc.</span>
+    </button>`;
+  }).join('');
+
+  // Reset qty to 1 base portion
+  document.getElementById('qualPortionQty').value = base.qty;
+  updateQualPortionCalc();
+}
+
+function setQualQty(qty) {
+  document.getElementById('qualPortionQty').value = qty;
+  // Highlight active button
+  document.querySelectorAll('#qualQtyBtns button').forEach(b => {
+    const isActive = parseFloat(b.dataset.qty) === qty;
+    b.style.background  = isActive ? 'var(--accent)' : 'var(--surface2)';
+    b.style.color       = isActive ? '#0e110a' : 'var(--text2)';
+    b.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+  });
+  updateQualPortionCalc();
+}
+
+function updateQualPortionCalc() {
+  if (!selectedQualCategory) return;
+  const base = QUAL_BASE_PORTIONS[selectedQualCategory];
+  if (!base) return;
+  const qty = parseFloat(document.getElementById('qualPortionQty').value) || 0;
+  const portions = qty / base.qty;
+  const portionsLabel = Number.isInteger(portions) ? portions : portions.toFixed(1);
+  const cat = QUAL_CATEGORIES.find(c => c.name === selectedQualCategory);
+  const result = document.getElementById('qualPortionResult');
+  const resultText = document.getElementById('qualPortionResultText');
+  result.style.display = qty > 0 ? 'block' : 'none';
+  resultText.innerHTML = `${qty} ${base.unit} = <strong>${portionsLabel} porción${portions !== 1 ? 'es' : ''}</strong> de <span style="color:${cat?.color}">${cat?.emoji} ${selectedQualCategory}</span>`;
 }
 
 function selectQualMeal(btn) {
@@ -3168,6 +3239,10 @@ async function submitQualEntry() {
   if (!selectedQualCategory){ showToast('Seleccioná una categoría', true); return; }
   if (!selectedQualMeal)    { showToast('Seleccioná un tiempo de comida', true); return; }
 
+  const base = QUAL_BASE_PORTIONS[selectedQualCategory];
+  const qty  = parseFloat(document.getElementById('qualPortionQty').value) || base.qty;
+  const portionCount = parseFloat((qty / base.qty).toFixed(2));
+
   const logDate = selectedQualDate || getTodayDate();
   const entry = {
     user_id:      currentUser.id,
@@ -3175,8 +3250,8 @@ async function submitQualEntry() {
     meal_type:    selectedQualMeal,
     food_name:    foodName,
     category:     selectedQualCategory,
-    portion_qty:  parseFloat(document.getElementById('qualPortionQty').value) || 1,
-    portion_unit: document.getElementById('qualPortionUnit').value,
+    portion_qty:  portionCount,   // number of portions (e.g. 2 for 1 tz of Harinas)
+    portion_unit: base.unit,      // base unit for this category
     notes:        document.getElementById('qualNotes').value.trim(),
   };
 
@@ -3257,16 +3332,24 @@ function renderQualSummary(dateStr) {
 // ── Make qualitative entry item ──
 function makeQualLogItem(e) {
   const time = e.logged_at ? new Date(e.logged_at).toLocaleTimeString('es-CR', { hour:'2-digit', minute:'2-digit' }) : '';
-  const cat = QUAL_CATEGORIES.find(c => c.name === e.category);
+  const cat  = QUAL_CATEGORIES.find(c => c.name === e.category);
+  const base = QUAL_BASE_PORTIONS[e.category];
+  // portion_qty is stored as number of portions — reconstruct display qty
+  const rawQty = base ? (e.portion_qty * base.qty) : e.portion_qty;
+  const rawQtyDisplay = Number.isInteger(rawQty) ? rawQty : rawQty.toFixed(2).replace(/\.?0+$/, '');
+  const portionsLabel = Number.isInteger(e.portion_qty) ? e.portion_qty : parseFloat(e.portion_qty).toFixed(1);
+
   return `<div class="log-item">
     <div class="log-item-top">
       <div class="log-item-name">${e.food_name}</div>
       <div style="display:flex;align-items:center;gap:6px">
-        <div class="log-item-cal" style="background:${cat?.color||'var(--surface2)'};color:#0e110a;font-size:12px">${cat?.emoji||''} ${e.category}</div>
+        <div style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${cat?.color||'var(--surface2)'};color:#0e110a">
+          ${cat?.emoji||''} ${e.category}
+        </div>
         <button class="log-item-delete" onclick="deleteQualEntry(${e.id})">✕</button>
       </div>
     </div>
-    <div class="log-item-meta">${e.portion_qty} ${e.portion_unit}${e.notes ? ' · ' + e.notes : ''}</div>
+    <div class="log-item-meta">${rawQtyDisplay} ${e.portion_unit} · ${portionsLabel} porción${e.portion_qty !== 1 ? 'es' : ''}${e.notes ? ' · ' + e.notes : ''}</div>
     <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:2px">${time}</div>
   </div>`;
 }
