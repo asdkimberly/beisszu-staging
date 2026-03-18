@@ -1186,19 +1186,13 @@ select { cursor: pointer; }
       <!-- Metas por categoría — visible solo si modo activo -->
       <div id="qualGoalsSection" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
         <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Porciones diarias por categoría</div>
-        ${[
-          ['Harinas','🟤','qualHarinas'],
-          ['Carnes','🔴','qualCarnes'],
-          ['Vegetales','🟢','qualVegetales'],
-          ['Grasas','🟡','qualGrasas'],
-          ['Lácteos','⚪','qualLacteos'],
-          ['Frutas','🟠','qualFrutas'],
-          ['Azúcar','🩷','qualAzucar'],
-        ].map(([label,emoji,id]) => `
-        <div class="settings-row">
-          <div class="settings-label">${emoji} ${label}</div>
-          <input class="settings-input" type="number" id="${id}" placeholder="0" inputmode="numeric" min="0" max="20">
-        </div>`).join('')}
+        <div class="settings-row"><div class="settings-label">🟤 Harinas</div><input class="settings-input" type="number" id="qualHarinas" placeholder="0" inputmode="numeric" min="0" max="20"></div>
+        <div class="settings-row"><div class="settings-label">🔴 Carnes</div><input class="settings-input" type="number" id="qualCarnes" placeholder="0" inputmode="numeric" min="0" max="20"></div>
+        <div class="settings-row"><div class="settings-label">🟢 Vegetales</div><input class="settings-input" type="number" id="qualVegetales" placeholder="0" inputmode="numeric" min="0" max="20"></div>
+        <div class="settings-row"><div class="settings-label">🟡 Grasas</div><input class="settings-input" type="number" id="qualGrasas" placeholder="0" inputmode="numeric" min="0" max="20"></div>
+        <div class="settings-row"><div class="settings-label">⚪ Lácteos</div><input class="settings-input" type="number" id="qualLacteos" placeholder="0" inputmode="numeric" min="0" max="20"></div>
+        <div class="settings-row"><div class="settings-label">🟠 Frutas</div><input class="settings-input" type="number" id="qualFrutas" placeholder="0" inputmode="numeric" min="0" max="20"></div>
+        <div class="settings-row"><div class="settings-label">🩷 Azúcar</div><input class="settings-input" type="number" id="qualAzucar" placeholder="0" inputmode="numeric" min="0" max="20"></div>
       </div>
     </div>
 
@@ -1440,13 +1434,13 @@ select { cursor: pointer; }
         <div class="card" style="margin-top:12px">
           <div class="section-label">Categoría</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px" id="qualCategoryGrid">
-            ${[
-              ['Harinas','#d4a840'],['Carnes','#e07840'],['Vegetales','#a8c060'],
-              ['Grasas','#f0d060'],['Lácteos','#b0c4d8'],['Frutas','#e8904a'],['Azúcar','#d4789a']
-            ].map(([cat,color]) => `
-              <button onclick="selectQualCategory('${cat}')" data-cat="${cat}"
-                style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s"
-                id="qualCat-${cat}">${cat}</button>`).join('')}
+            <button onclick="selectQualCategory('Harinas')" data-cat="Harinas" id="qualCat-Harinas" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s">Harinas</button>
+            <button onclick="selectQualCategory('Carnes')" data-cat="Carnes" id="qualCat-Carnes" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s">Carnes</button>
+            <button onclick="selectQualCategory('Vegetales')" data-cat="Vegetales" id="qualCat-Vegetales" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s">Vegetales</button>
+            <button onclick="selectQualCategory('Grasas')" data-cat="Grasas" id="qualCat-Grasas" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s">Grasas</button>
+            <button onclick="selectQualCategory('Lácteos')" data-cat="Lácteos" id="qualCat-Lácteos" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s">Lácteos</button>
+            <button onclick="selectQualCategory('Frutas')" data-cat="Frutas" id="qualCat-Frutas" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s">Frutas</button>
+            <button onclick="selectQualCategory('Azúcar')" data-cat="Azúcar" id="qualCat-Azúcar" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font-display);font-size:13px;cursor:pointer;transition:all 0.2s">Azúcar</button>
           </div>
         </div>
 
