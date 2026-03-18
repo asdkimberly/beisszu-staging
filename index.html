@@ -1193,6 +1193,7 @@ select { cursor: pointer; }
         <div class="settings-row"><div class="settings-label">⚪ Lácteos</div><input class="settings-input" type="number" id="qualLacteos" placeholder="0" inputmode="numeric" min="0" max="20"></div>
         <div class="settings-row"><div class="settings-label">🟠 Frutas</div><input class="settings-input" type="number" id="qualFrutas" placeholder="0" inputmode="numeric" min="0" max="20"></div>
         <div class="settings-row"><div class="settings-label">🩷 Azúcar</div><input class="settings-input" type="number" id="qualAzucar" placeholder="0" inputmode="numeric" min="0" max="20"></div>
+        <button onclick="saveQualSettings()" class="save-settings-btn" style="margin-top:12px">✓ Guardar porciones</button>
       </div>
     </div>
 
@@ -3009,12 +3010,36 @@ function applyQualMode() {
 }
 
 async function toggleQualitativeMode() {
-  qualMode = !qualMode;
-  settings.qualMode = qualMode;
+  if (qualMode) return; // already active — can't deactivate from toggle
+  qualMode = true;
+  settings.qualMode = true;
   applyQualMode();
-  await sb.from('profiles').upsert({ id: currentUser.id, qualitative_mode: qualMode });
+  await sb.from('profiles').upsert({ id: currentUser.id, qualitative_mode: true });
   renderCarouselDay();
-  showToast(qualMode ? '✓ Modo cualitativo activado' : 'Modo cuantitativo activado');
+  showToast('✓ Modo cualitativo activado');
+}
+
+async function saveQualSettings() {
+  settings.qualHarinas   = parseInt(document.getElementById('qualHarinas').value)   || 0;
+  settings.qualCarnes    = parseInt(document.getElementById('qualCarnes').value)    || 0;
+  settings.qualVegetales = parseInt(document.getElementById('qualVegetales').value) || 0;
+  settings.qualGrasas    = parseInt(document.getElementById('qualGrasas').value)    || 0;
+  settings.qualLacteos   = parseInt(document.getElementById('qualLacteos').value)   || 0;
+  settings.qualFrutas    = parseInt(document.getElementById('qualFrutas').value)    || 0;
+  settings.qualAzucar    = parseInt(document.getElementById('qualAzucar').value)    || 0;
+  const { error } = await sb.from('profiles').upsert({
+    id: currentUser.id,
+    goal_cat_harinas:   settings.qualHarinas,
+    goal_cat_carnes:    settings.qualCarnes,
+    goal_cat_vegetales: settings.qualVegetales,
+    goal_cat_grasas:    settings.qualGrasas,
+    goal_cat_lacteos:   settings.qualLacteos,
+    goal_cat_frutas:    settings.qualFrutas,
+    goal_cat_azucar:    settings.qualAzucar,
+  });
+  if (error) { showToast('Error al guardar', true); return; }
+  showToast('✓ Porciones guardadas');
+  renderCarouselDay();
 }
 
 // ── Load qualitative entries ──
